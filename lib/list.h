@@ -91,6 +91,11 @@ class List {
 template <class T>
 class SortedList : public List<T> {
   public:
+    SortedList(char *schedulerName) : List<T>() { name = schedulerName; };
+    SortedList(char *schedulerName, int (*comp)(T x, T y)) : List<T>() {
+        name = schedulerName;
+        compare = comp;
+    }
     SortedList(int (*comp)(T x, T y)) : List<T>() { compare = comp;};
     ~SortedList() {};		// base class destructor called automatically
 
@@ -101,12 +106,13 @@ class SortedList : public List<T> {
 				// verify module is working
 
   private:
+    char * name;
+
     int (*compare)(T x, T y);	// function for sorting list elements
 
     void Prepend(T item) { Insert(item); }  // *pre*pending has no meaning 
-				             //	in a sorted list
-    void Append(T item) { Insert(item); }   // neither does *ap*pend 
-
+				            //	in a sorted list
+    void Append(T item);                    // neither does *ap*pend 
 };
 
 // The following class can be used to step through a list. 

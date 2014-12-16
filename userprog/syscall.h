@@ -34,8 +34,9 @@
 #define SC_ExecV	13
 #define SC_ThreadExit   14
 #define SC_ThreadJoin   15
-#define SC_PrintInt     16
 #define SC_Add		42
+#define SC_PrintInt     77
+#define SC_Nice         88
 
 #ifndef IN_ASM
 
@@ -58,7 +59,17 @@ void Halt();
  */ 
 
 int Add(int op1, int op2);
+
+/*
+ * Output the number onto console
+ */
 void PrintInt(int number);
+
+/*
+ * Change the priority of thead
+ */
+void Nice(int priority);
+
 /* Address space control operations: Exit, Exec, Execv, and Join */
 
 /* This user program is done (status = 0 means exited normally). */

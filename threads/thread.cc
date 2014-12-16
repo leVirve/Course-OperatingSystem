@@ -35,16 +35,17 @@ const int STACK_FENCEPOST = 0xdedbeef;
 
 Thread::Thread(char* threadName, int threadID)
 {
-	ID = threadID;
+    ID = threadID;
     name = threadName;
+    pri = 75;
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
     cout << "Thread " << ID << "\tProcessNew\t" << kernel->stats->totalTicks << endl;
     for (int i = 0; i < MachineStateSize; i++) {
-	machineState[i] = NULL;		// not strictly necessary, since
-					// new thread ignores contents 
-					// of machine registers
+        machineState[i] = NULL;		// not strictly necessary, since
+                                        // new thread ignores contents 
+                                        // of machine registers
     }
     space = NULL;
 }
@@ -66,7 +67,15 @@ Thread::~Thread()
     DEBUG(dbgThread, "Deleting thread: " << name);
     ASSERT(this != kernel->currentThread);
     if (stack != NULL)
-	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
+        DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
+}
+
+bool Thread::setPriority(int priority)
+{
+    if(priority >= 150 || priority < 0) return false;
+    pri = priority;
+    cout<< "Tick " << kernel->stats->totalTicks << " Thread" << ID << " changes its priority to " << pri << endl;
+    return true;
 }
 
 //----------------------------------------------------------------------
@@ -95,13 +104,13 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     Interrupt *interrupt = kernel->interrupt;
     Scheduler *scheduler = kernel->scheduler;
     IntStatus oldLevel;
-    
+
     DEBUG(dbgThread, "Forking thread: " << name << " f(a): " << (int) func << " " << arg);
     StackAllocate(func, arg);
 
     oldLevel = interrupt->SetLevel(IntOff);
     scheduler->ReadyToRun(this);	// ReadyToRun assumes that interrupts 
-					// are disabled!
+                                        // are disabled!
     (void) interrupt->SetLevel(oldLevel);
 }    
 
@@ -125,11 +134,11 @@ Thread::CheckOverflow()
 {
     if (stack != NULL) {
 #ifdef HPUX			// Stacks grow upward on the Snakes
-	ASSERT(stack[StackSize - 1] == STACK_FENCEPOST);
+        ASSERT(stack[StackSize - 1] == STACK_FENCEPOST);
 #else
-	ASSERT(*stack == STACK_FENCEPOST);
+        ASSERT(*stack == STACK_FENCEPOST);
 #endif
-   }
+    }
 }
 
 //----------------------------------------------------------------------
@@ -148,7 +157,7 @@ Thread::Begin ()
 {
     ASSERT(this == kernel->currentThread);
     DEBUG(dbgThread, "Beginning thread: " << name);
-    
+
     kernel->scheduler->CheckToBeDestroyed();
     kernel->interrupt->Enable();
 }
@@ -173,7 +182,7 @@ Thread::Finish ()
 {
     (void) kernel->interrupt->SetLevel(IntOff);		
     ASSERT(this == kernel->currentThread);
-    
+
     DEBUG(dbgThread, "Finishing thread: " << name);
     cout << "Thread " << kernel->currentThread->getID() << "\tProcessFinish\t" << kernel->stats->totalTicks << endl;
     Sleep(TRUE);				// invokes SWITCH
@@ -204,16 +213,24 @@ Thread::Yield ()
 {
     Thread *nextThread;
     IntStatus oldLevel = kernel->interrupt->SetLevel(IntOff);
-    
+
     ASSERT(this == kernel->currentThread);
-    
+
     DEBUG(dbgThread, "Yielding thread: " << name);
-    
+#ifdef WTF_SPEC
     nextThread = kernel->scheduler->FindNextToRun();
     if (nextThread != NULL) {
-	kernel->scheduler->ReadyToRun(this);
-	kernel->scheduler->Run(nextThread, FALSE);
+        kernel->scheduler->ReadyToRun(this);
+        kernel->scheduler->Run(nextThread, FALSE);
     }
+#else
+    kernel->scheduler->ReadyToRun(this);
+    nextThread = kernel->scheduler->FindNextToRun();
+    if(nextThread != NULL) {
+        kernel->scheduler->Run(nextThread, FALSE);
+    }
+#endif
+
     (void) kernel->interrupt->SetLevel(oldLevel);
 }
 
@@ -241,18 +258,25 @@ void
 Thread::Sleep (bool finishing)
 {
     Thread *nextThread;
-    
+
     ASSERT(this == kernel->currentThread);
     ASSERT(kernel->interrupt->getLevel() == IntOff);
-    
+
     DEBUG(dbgThread, "Sleeping thread: " << name);
     cout << "Thread " << kernel->currentThread->getID() << "\tProcessSleep\t" << kernel->stats->totalTicks << endl;
 
     status = BLOCKED;
-	//cout << "debug Thread::Sleep " << name << "wait for Idle\n";
+
+    // remove finished thread from ready queue
+    if(finishing) {
+        //kernel->scheduler->->Remove(this);
+    }
+
+    //cout << "debug Thread::Sleep " << name << "wait for Idle\n";
     while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL) {
-		kernel->interrupt->Idle();	// no one to run, wait for an interrupt
-	}    
+        kernel->interrupt->Idle();	// no one to run, wait for an interrupt
+    }
+    cout << nextThread->getName() << endl; 
     // returns when it's time for us to run
     kernel->scheduler->Run(nextThread, finishing); 
 }
@@ -277,7 +301,7 @@ void ThreadPrint(Thread *t) { t->Print(); }
 //	so we need to do the conversion.
 //----------------------------------------------------------------------
 
-static void *
+    static void *
 PLabelToAddr(void *plabel)
 {
     int funcPtr = (int) plabel;
@@ -305,7 +329,7 @@ PLabelToAddr(void *plabel)
 //	"arg" is the parameter to be passed to the procedure
 //----------------------------------------------------------------------
 
-void
+    void
 Thread::StackAllocate (VoidFunctionPtr func, void *arg)
 {
     stack = (int *) AllocBoundedArray(StackSize * sizeof(int));
@@ -319,8 +343,8 @@ Thread::StackAllocate (VoidFunctionPtr func, void *arg)
 
 #ifdef SPARC
     stackTop = stack + StackSize - 96; 	// SPARC stack must contains at 
-					// least 1 activation record 
-					// to start with.
+                                        // least 1 activation record 
+                                        // to start with.
     *stack = STACK_FENCEPOST;
 #endif 
 
@@ -348,7 +372,7 @@ Thread::StackAllocate (VoidFunctionPtr func, void *arg)
     *(--stackTop) = (int) ThreadRoot;
     *stack = STACK_FENCEPOST;
 #endif
-    
+
 #ifdef PARISC
     machineState[PCState] = PLabelToAddr(ThreadRoot);
     machineState[StartupPCState] = PLabelToAddr(ThreadBegin);
@@ -375,11 +399,11 @@ Thread::StackAllocate (VoidFunctionPtr func, void *arg)
 //	while executing kernel code.  This routine saves the former.
 //----------------------------------------------------------------------
 
-void
+    void
 Thread::SaveUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
-	userRegisters[i] = kernel->machine->ReadRegister(i);
+        userRegisters[i] = kernel->machine->ReadRegister(i);
 }
 
 //----------------------------------------------------------------------
@@ -391,11 +415,11 @@ Thread::SaveUserState()
 //	while executing kernel code.  This routine restores the former.
 //----------------------------------------------------------------------
 
-void
+    void
 Thread::RestoreUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
-	kernel->machine->WriteRegister(i, userRegisters[i]);
+        kernel->machine->WriteRegister(i, userRegisters[i]);
 }
 
 
@@ -408,13 +432,13 @@ Thread::RestoreUserState()
 //	purposes.
 //----------------------------------------------------------------------
 
-static void
+    static void
 SimpleThread(int which)
 {
     int num;
-    
+
     for (num = 0; num < 5; num++) {
-	cout << "*** thread " << which << " looped " << num << " times\n";
+        cout << "*** thread " << which << " looped " << num << " times\n";
         kernel->currentThread->Yield();
     }
 }
@@ -425,7 +449,7 @@ SimpleThread(int which)
 //	to call SimpleThread, and then calling SimpleThread ourselves.
 //----------------------------------------------------------------------
 
-void
+    void
 Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");

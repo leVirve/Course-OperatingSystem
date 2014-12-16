@@ -17,17 +17,23 @@
 
 void SysHalt()
 {
-  kernel->interrupt->Halt();
+    kernel->interrupt->Halt();
 }
 
 
 int SysAdd(int op1, int op2)
 {
-  return op1 + op2;
+    return op1 + op2;
 }
 
 void SysPrintInt(int number)
 {
-	kernel->interrupt->PrintInt(number);
+    kernel->interrupt->PrintInt(number);
 }
+
+void SysNice(int priority)
+{
+    kernel->interrupt->Nice(priority);
+}
+
 #endif /* ! __USERPROG_KSYSCALL_H__ */

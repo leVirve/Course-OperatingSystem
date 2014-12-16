@@ -28,17 +28,19 @@ class Scheduler {
 				// list, if any, and return thread.
     void Run(Thread* nextThread, bool finishing);
     				// Cause nextThread to start running
-    void CheckToBeDestroyed();// Check if thread that had been
+    void CheckToBeDestroyed();  // Check if thread that had been
     				// running needs to be deleted
     void Print();		// Print contents of ready list
     
     // SelfTest for scheduler is implemented in class Thread
     
   private:
-    List<Thread *> *readyList;  // queue of threads that are ready to run,
+    List<Thread *> *readyRRList;  // queue of threads that are ready to run,
 				// but not running
+    List<Thread *> *readyPriorityList;
     Thread *toBeDestroyed;	// finishing thread to be destroyed
     				// by the next thread that runs
+    void aging(List<Thread *>* list);
 };
 
 #endif // SCHEDULER_H

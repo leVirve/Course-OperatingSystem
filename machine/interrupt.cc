@@ -241,10 +241,17 @@ Interrupt::Halt()
     kernel->stats->Print();
     delete kernel;	// Never returns.
 }
+
 void
 Interrupt::PrintInt(int number)
 {
     kernel->PrintInt(number);
+}
+
+void
+Interrupt::Nice(int priority)
+{
+    kernel->Nice(priority);
 }
 
 //----------------------------------------------------------------------

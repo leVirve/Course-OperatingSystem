@@ -178,14 +178,21 @@ ThreadJoin:
 	j 	$31
 	.end ThreadJoin
 	
-	.globl PrintInt
+	.globl  PrintInt
         .ent    PrintInt
 PrintInt:
         addiu $2, $0, SC_PrintInt
         syscall
         j       $31
-        .end PtintInt
+        .end PrintInt
 
+	.globl  Nice
+        .ent    Nice
+Nice:
+        addiu $2, $0, SC_Nice
+        syscall
+        j       $31
+        .end Nice 
 
 /* dummy function to keep gcc happy */
         .globl  __main

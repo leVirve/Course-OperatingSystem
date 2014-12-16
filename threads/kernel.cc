@@ -37,56 +37,56 @@ Kernel::Kernel(int argc, char **argv)
 #endif
     reliability = 1;            // network reliability, default is 1.0
     hostName = 0;               // machine id, also UNIX socket name
-                                // 0 is the default machine id
+    // 0 is the default machine id
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-rs") == 0) {
- 	    	ASSERT(i + 1 < argc);
-	    	RandomInit(atoi(argv[i + 1]));// initialize pseudo-random
-			// number generator
-	    	randomSlice = TRUE;
-	    	i++;
+            ASSERT(i + 1 < argc);
+            RandomInit(atoi(argv[i + 1]));// initialize pseudo-random
+            // number generator
+            randomSlice = TRUE;
+            i++;
         } else if (strcmp(argv[i], "-s") == 0) {
             debugUserProg = TRUE;
-		} else if (strcmp(argv[i], "-e") == 0) {
-        	execfile[++execfileNum]= argv[++i];
-		cout << execfile[execfileNum] << "\n";
-		priority[execfileNum] = 75;
-		} else if (strcmp(argv[i], "-ep") == 0) {
-        	execfile[++execfileNum]= argv[++i];
-		cout << execfile[execfileNum] << "\n";
-		priority[execfileNum] = atoi(argv[++i]);
-		} else if (strcmp(argv[i], "--test") ==0 ) {
-                        fstream fp;
-                        fp.open("JobList", ios::in);
-                        if (!fp) {
-                                cout << "Fail to open file JobList" << endl;
-                        } else {
-                                if (!fp.eof()) {
-                                        fp >> totalList;
-                                }
-                                for (int i=0;i<totalList;i++) {
-                                        char line[100];
-                                        fp >> line;
-                                        char *substring;
-                                        char *delim=",";
-                                        substring = strtok(line, delim);
-                                        initTime[i] = atoi(substring);
-                                        substring = strtok(NULL, delim);
-                                        strcpy(jobName[i],substring);
-                                }
-                                fp.close();
-                        }
-		} else if (strcmp(argv[i], "-ci") == 0) {
-	    	ASSERT(i + 1 < argc);
-	    	consoleIn = argv[i + 1];
-	    	i++;
-		} else if (strcmp(argv[i], "-co") == 0) {
-	    	ASSERT(i + 1 < argc);
-	    	consoleOut = argv[i + 1];
-	    	i++;
+        } else if (strcmp(argv[i], "-e") == 0) {
+            execfile[++execfileNum]= argv[++i];
+            cout << execfile[execfileNum] << "\n";
+            priority[execfileNum] = 75;
+        } else if (strcmp(argv[i], "-ep") == 0) {
+            execfile[++execfileNum]= argv[++i];
+            cout << execfile[execfileNum] << "\n";
+            priority[execfileNum] = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--test") ==0 ) {
+            fstream fp;
+            fp.open("JobList", ios::in);
+            if (!fp) {
+                cout << "Fail to open file JobList" << endl;
+            } else {
+                if (!fp.eof()) {
+                    fp >> totalList;
+                }
+                for (int i=0;i<totalList;i++) {
+                    char line[100];
+                    fp >> line;
+                    char *substring;
+                    char *delim=",";
+                    substring = strtok(line, delim);
+                    initTime[i] = atoi(substring);
+                    substring = strtok(NULL, delim);
+                    strcpy(jobName[i],substring);
+                }
+                fp.close();
+            }
+        } else if (strcmp(argv[i], "-ci") == 0) {
+            ASSERT(i + 1 < argc);
+            consoleIn = argv[i + 1];
+            i++;
+        } else if (strcmp(argv[i], "-co") == 0) {
+            ASSERT(i + 1 < argc);
+            consoleOut = argv[i + 1];
+            i++;
 #ifndef FILESYS_STUB
-		} else if (strcmp(argv[i], "-f") == 0) {
-	    	formatFlag = TRUE;
+        } else if (strcmp(argv[i], "-f") == 0) {
+            formatFlag = TRUE;
 #endif
         } else if (strcmp(argv[i], "-n") == 0) {
             ASSERT(i + 1 < argc);   // next argument is float
@@ -98,13 +98,13 @@ Kernel::Kernel(int argc, char **argv)
             i++;
         } else if (strcmp(argv[i], "-u") == 0) {
             cout << "Partial usage: nachos [-rs randomSeed]\n";
-	   		cout << "Partial usage: nachos [-s]\n";
+            cout << "Partial usage: nachos [-s]\n";
             cout << "Partial usage: nachos [-ci consoleIn] [-co consoleOut]\n";
 #ifndef FILESYS_STUB
-	    	cout << "Partial usage: nachos [-nf]\n";
+            cout << "Partial usage: nachos [-nf]\n";
 #endif
             cout << "Partial usage: nachos [-n #] [-m #]\n";
-		}
+        }
     }
 }
 
@@ -115,13 +115,13 @@ Kernel::Kernel(int argc, char **argv)
 //	data via the "kernel" global variable.
 //----------------------------------------------------------------------
 
-void
+    void
 Kernel::Initialize()
 {
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
     // object to save its state. 
-	
+
 
     stats = new Statistics();		// collect statistics
     interrupt = new Interrupt;		// start up interrupt handling
@@ -162,7 +162,7 @@ Kernel::~Kernel()
     delete fileSystem;
     delete postOfficeIn;
     delete postOfficeOut;
-    
+
     Exit(0);
 }
 
@@ -173,23 +173,23 @@ Kernel::~Kernel()
 
 void
 Kernel::ThreadSelfTest() {
-   Semaphore *semaphore;
-   SynchList<int> *synchList;
-   
-   LibSelfTest();		// test library routines
-   
-   currentThread->SelfTest();	// test thread switching
-   
-   				// test semaphore operation
-   semaphore = new Semaphore("test", 0);
-   semaphore->SelfTest();
-   delete semaphore;
-   
-   				// test locks, condition variables
-				// using synchronized lists
-   synchList = new SynchList<int>;
-   synchList->SelfTest(9);
-   delete synchList;
+    Semaphore *semaphore;
+    SynchList<int> *synchList;
+
+    LibSelfTest();		// test library routines
+
+    currentThread->SelfTest();	// test thread switching
+
+    // test semaphore operation
+    semaphore = new Semaphore("test", 0);
+    semaphore->SelfTest();
+    delete semaphore;
+
+    // test locks, condition variables
+    // using synchronized lists
+    synchList = new SynchList<int>;
+    synchList->SelfTest(9);
+    delete synchList;
 
 }
 
@@ -255,7 +255,7 @@ Kernel::NetworkTest() {
         // Wait for the first message from the other machine
         postOfficeIn->Receive(0, &inPktHdr, &inMailHdr, buffer);
         cout << "Got: " << buffer << " : from " << inPktHdr.from << ", box " 
-                                                << inMailHdr.from << "\n";
+            << inMailHdr.from << "\n";
         cout.flush();
 
         // Send acknowledgement to the other machine (using "reply to" mailbox
@@ -266,9 +266,9 @@ Kernel::NetworkTest() {
         postOfficeOut->Send(outPktHdr, outMailHdr, ack); 
 
         // Wait for the ack from the other machine to the first message we sent
-	postOfficeIn->Receive(1, &inPktHdr, &inMailHdr, buffer);
+        postOfficeIn->Receive(1, &inPktHdr, &inMailHdr, buffer);
         cout << "Got: " << buffer << " : from " << inPktHdr.from << ", box " 
-                                                << inMailHdr.from << "\n";
+            << inMailHdr.from << "\n";
         cout.flush();
     }
 
@@ -277,65 +277,44 @@ Kernel::NetworkTest() {
 
 void ForkExecute(Thread *t)
 {
-	if ( !t->space->Load(t->getName()) ) {
-    	return;             // executable not found
+    if ( !t->space->Load(t->getName()) ) {
+        return;             // executable not found
     }
-	
+
     t->space->Execute(t->getName());
 
 }
 
 void Kernel::ExecAll()
 {
-	for (int i=1;i<=execfileNum;i++) {
-		int a = Exec(execfile[i]);
-	}
-	currentThread->Finish();
+    for (int i=1;i<=execfileNum;i++) {
+        int a = Exec(execfile[i]);
+    }
+    currentThread->Finish();
     //Kernel::Exec();	
 }
 
 
 int Kernel::Exec(char* name)
 {
-	cout << "Thread " << threadNum << "\t" << name << "\t\t(Pri: " << priority[threadNum] << ")" <<endl;
-	fflush(stdout);
-	t[threadNum] = new Thread(name, threadNum);
-	t[threadNum]->space = new AddrSpace();
-	t[threadNum]->Fork((VoidFunctionPtr) &ForkExecute, (void *)t[threadNum]);
-	threadNum++;
+    cout << "Thread " << threadNum << "\t" << name << "\t\t(Pri: " << priority[threadNum] << ")" <<endl;
+    fflush(stdout);
+    t[threadNum] = new Thread(name, threadNum);
+    t[threadNum]->space = new AddrSpace();
+    t[threadNum]->Fork((VoidFunctionPtr) &ForkExecute, (void *)t[threadNum]);
+    threadNum++;
 
-	return threadNum-1;
-/*
-    cout << "Total threads number is " << execfileNum << endl;
-    for (int n=1;n<=execfileNum;n++) {
-		t[n] = new Thread(execfile[n]);
-		t[n]->space = new AddrSpace();
-		t[n]->Fork((VoidFunctionPtr) &ForkExecute, (void *)t[n]);
-		cout << "Thread " << execfile[n] << " is executing." << endl;
-	}
-	cout << "debug Kernel::Run finished.\n";	
-*/
-//  Thread *t1 = new Thread(execfile[1]);
-//  Thread *t1 = new Thread("../test/test1");
-//  Thread *t2 = new Thread("../test/test2");
-
-//    AddrSpace *halt = new AddrSpace();
-//  t1->space = new AddrSpace();
-//  t2->space = new AddrSpace();
-
-//    halt->Execute("../test/halt");
-//  t1->Fork((VoidFunctionPtr) &ForkExecute, (void *)t1);
-//  t2->Fork((VoidFunctionPtr) &ForkExecute, (void *)t2);
-
-//	currentThread->Finish();
-//    Kernel::Run();
-//  cout << "after ThreadedKernel:Run();" << endl;  // unreachable
+    return threadNum - 1;
 }
+
 void Kernel::PrintInt(int number)
 {
-	synchConsoleOut->PutInt(number);	
+    synchConsoleOut->PutInt(number);	
 }
 
-
+void Kernel::Nice(int priority)
+{
+    currentThread->setPriority(priority);
+}
 
 

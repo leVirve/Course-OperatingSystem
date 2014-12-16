@@ -28,58 +28,59 @@ class SynchDisk;
 
 
 class Kernel {
-  public:
+    public:
         char jobName[1000][100];
         int initTime[1000];
         int listCounter;
         int totalList;
-    Kernel(int argc, char **argv);
-    				// Interpret command line arguments
-    ~Kernel();		        // deallocate the kernel
-    
-    void Initialize(); 		// initialize the kernel -- separated
-				// from constructor because 
-				// refers to "kernel" as a global
-	void ExecAll();
-	int Exec(char* name);
-    void ThreadSelfTest();	// self test of threads and synchronization
-	
-    void ConsoleTest();         // interactive console self test
-    void NetworkTest();         // interactive 2-machine network test
-    void PrintInt(int number);
-	Thread* getThread(int threadID){return t[threadID];}    
-// These are public for notational convenience; really, 
-// they're global variables used everywhere.
+        Kernel(int argc, char **argv);
+        // Interpret command line arguments
+        ~Kernel();		        // deallocate the kernel
 
-    Thread *currentThread;	// the thread holding the CPU
-    Scheduler *scheduler;	// the ready list
-    Interrupt *interrupt;	// interrupt status
-    Statistics *stats;		// performance metrics
-    Alarm *alarm;		// the software alarm clock    
-    Machine *machine;           // the simulated CPU
-    SynchConsoleInput *synchConsoleIn;
-    SynchConsoleOutput *synchConsoleOut;
-    SynchDisk *synchDisk;
-    FileSystem *fileSystem;     
-    PostOfficeInput *postOfficeIn;
-    PostOfficeOutput *postOfficeOut;
+        void Initialize(); 		// initialize the kernel -- separated
+        // from constructor because 
+        // refers to "kernel" as a global
+        void ExecAll();
+        int Exec(char* name);
+        void ThreadSelfTest();	// self test of threads and synchronization
 
-    int hostName;               // machine identifier
+        void ConsoleTest();         // interactive console self test
+        void NetworkTest();         // interactive 2-machine network test
+        void PrintInt(int number);
+        void Nice(int priority);
+        Thread* getThread(int threadID){return t[threadID];}    
+        // These are public for notational convenience; really, 
+        // they're global variables used everywhere.
 
-  private:
+        Thread *currentThread;	// the thread holding the CPU
+        Scheduler *scheduler;	// the ready list
+        Interrupt *interrupt;	// interrupt status
+        Statistics *stats;		// performance metrics
+        Alarm *alarm;		// the software alarm clock    
+        Machine *machine;           // the simulated CPU
+        SynchConsoleInput *synchConsoleIn;
+        SynchConsoleOutput *synchConsoleOut;
+        SynchDisk *synchDisk;
+        FileSystem *fileSystem;     
+        PostOfficeInput *postOfficeIn;
+        PostOfficeOutput *postOfficeOut;
 
-	Thread* t[1000];
-	char*   execfile[1000];
-	int priority[1000];
-	int execfileNum;
-	int threadNum;
-    bool randomSlice;		// enable pseudo-random time slicing
-    bool debugUserProg;         // single step user program
-    double reliability;         // likelihood messages are dropped
-    char *consoleIn;            // file to read console input from
-    char *consoleOut;           // file to send console output to
+        int hostName;               // machine identifier
+
+    private:
+
+        Thread* t[1000];
+        char*   execfile[1000];
+        int priority[1000];
+        int execfileNum;
+        int threadNum;
+        bool randomSlice;		// enable pseudo-random time slicing
+        bool debugUserProg;         // single step user program
+        double reliability;         // likelihood messages are dropped
+        char *consoleIn;            // file to read console input from
+        char *consoleOut;           // file to send console output to
 #ifndef FILESYS_STUB
-    bool formatFlag;          // format the disk if this is true
+        bool formatFlag;          // format the disk if this is true
 #endif
 };
 

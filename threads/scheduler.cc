@@ -31,7 +31,8 @@
 
 Scheduler::Scheduler()
 { 
-    readyList = new List<Thread *>; 
+    readyRRList = new SortedList<Thread *>("RR");
+    readyPriorityList = new SortedList< Thread *>("Priority", Thread::compare_by_priority);
     toBeDestroyed = NULL;
 } 
 
@@ -42,7 +43,8 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 { 
-    delete readyList; 
+    delete readyRRList; 
+    delete readyPriorityList; 
 } 
 
 //----------------------------------------------------------------------
@@ -58,10 +60,26 @@ Scheduler::ReadyToRun (Thread *thread)
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
     DEBUG(dbgThread, "Putting thread on ready list: " << thread->getName());
-	//cout << "Putting thread on ready list: " << thread->getName() << endl ;
-    thread->setStatus(READY);
+    
+    thread->setStatus(READY); 
+    thread->setStartReadyTime(kernel->stats->totalTicks);
     cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
-    readyList->Append(thread);
+
+    cout << "Tick " << kernel->stats->totalTicks << " Thread " << thread->getID() << " ";
+    readyPriorityList->Append(thread);
+}
+
+void
+Scheduler::aging (List<Thread *>* list)
+{
+    ListIterator<Thread *> *iter = new ListIterator<Thread *>((List<Thread *>*) list);
+    for(; !iter->IsDone(); iter->Next()) {
+        Thread* thread = iter->Item();
+        int currentclocks = kernel->stats->totalTicks;
+        if(currentclocks - thread->getStartReadyTime() >= 1500) {
+            thread->setPriority(10 + thread->getPriority());
+        }
+    }
 }
 
 //----------------------------------------------------------------------
@@ -77,10 +95,30 @@ Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
 
-    if (readyList->IsEmpty()) {
-		return NULL;
+    if (readyPriorityList->IsEmpty()) {
+        return NULL;
     } else {
-    	return readyList->RemoveFront();
+#ifdef DIRTY
+        Thread* nextToRun = readyPriorityList->RemoveFront();
+        while(nextToRun->getStatus() == BLOCKED) {
+            nextToRun = readyPriorityList->RemoveFront();    
+        }
+        if(nextToRun->getPriority() < kernel->currentThread->getPriority()
+                && kernel->currentThread->getStatus() != BLOCKED) {
+            readyPriorityList->Append(nextToRun); 
+            nextToRun = kernel->currentThread; 
+        }
+#else
+        Thread * nextThread = readyPriorityList->RemoveFront();
+        while(nextThread->getStatus() == BLOCKED) {
+            nextThread = readyPriorityList->RemoveFront();
+        }
+#endif
+        //cout << "choose " << nextToRun->getName() << endl;
+        aging(readyPriorityList);
+        //Print();
+        //cout << endl;
+        return nextThread;
     }
 }
 
@@ -105,28 +143,30 @@ void
 Scheduler::Run (Thread *nextThread, bool finishing)
 {
     Thread *oldThread = kernel->currentThread;
-    
+
+    if(oldThread == nextThread) return;
+
     ASSERT(kernel->interrupt->getLevel() == IntOff);
 
     if (finishing) {	// mark that we need to delete current thread
-         ASSERT(toBeDestroyed == NULL);
-	 toBeDestroyed = oldThread;
+        ASSERT(toBeDestroyed == NULL);
+        toBeDestroyed = oldThread;
     }
-    
+
     if (oldThread->space != NULL) {	// if this thread is a user program,
         oldThread->SaveUserState(); 	// save the user's CPU registers
-	oldThread->space->SaveState();
+        oldThread->space->SaveState();
     }
-    
+
     oldThread->CheckOverflow();		    // check if the old thread
-					    // had an undetected stack overflow
+    // had an undetected stack overflow
 
     kernel->currentThread = nextThread;  // switch to the next thread
     nextThread->setStatus(RUNNING);      // nextThread is now running
     cout << "Thread " << kernel->currentThread->getID() << "\tProcessRunning\t" << kernel->stats->totalTicks << endl;
-    
+
     DEBUG(dbgThread, "Switching from: " << oldThread->getName() << " to: " << nextThread->getName());
-    
+
     // This is a machine-dependent assembly language routine defined 
     // in switch.s.  You may have to think
     // a bit to figure out what happens after this, both from the point
@@ -135,19 +175,19 @@ Scheduler::Run (Thread *nextThread, bool finishing)
     SWITCH(oldThread, nextThread);
 
     // we're back, running oldThread
-      
+
     // interrupts are off when we return from switch!
     ASSERT(kernel->interrupt->getLevel() == IntOff);
 
     DEBUG(dbgThread, "Now in thread: " << oldThread->getName());
 
     CheckToBeDestroyed();		// check if thread we were running
-					// before this one has finished
-					// and needs to be cleaned up
-    
+    // before this one has finished
+    // and needs to be cleaned up
+
     if (oldThread->space != NULL) {	    // if there is an address space
         oldThread->RestoreUserState();     // to restore, do it.
-	oldThread->space->RestoreState();
+        oldThread->space->RestoreState();
     }
 }
 
@@ -164,10 +204,10 @@ Scheduler::CheckToBeDestroyed()
 {
     if (toBeDestroyed != NULL) {
         delete toBeDestroyed;
-	toBeDestroyed = NULL;
+        toBeDestroyed = NULL;
     }
 }
- 
+
 //----------------------------------------------------------------------
 // Scheduler::Print
 // 	Print the scheduler state -- in other words, the contents of
@@ -177,5 +217,5 @@ void
 Scheduler::Print()
 {
     cout << "Ready list contents:\n";
-    readyList->Apply(ThreadPrint);
+    readyPriorityList->Apply(ThreadPrint);
 }
