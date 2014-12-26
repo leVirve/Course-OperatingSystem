@@ -85,10 +85,16 @@ Scheduler::aging (List<Thread *>* readylist)
     for (; !iter->IsDone(); iter->Next()) {
         Thread* thread = iter->Item();
         int clocks_interval = kernel->stats->totalTicks - thread->getStartReadyTime();
-        if (clocks_interval && clocks_interval % AGING_TICKS == 0) {
+        if (clocks_interval >= AGING_TICKS) {
             thread->setPriority(PRIORITY_AGING + thread->getPriority());
+            thread->setStartReadyTime(kernel->stats->totalTicks);
             list->Remove(thread);
             list->Insert(thread);
+        }
+        int pri = thread->getPriority();
+        if (pri >= PRI_SCHD_THRESHHOLD) {
+            readyPriorityList->Remove(thread);
+            ReadyToRun(thread);
         }
     }
     processMoving();
@@ -98,22 +104,14 @@ void
 Scheduler::processMoving()
 {
     ListIterator<Thread *>* iterRR  = new ListIterator<Thread *>((List<Thread *>*) readyRRList);
-    ListIterator<Thread *>* iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
+    // ListIterator<Thread *>* iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
 
-    for (; !iterRR->IsDone(); iterRR->Item()) {
+    for (; !iterRR->IsDone(); iterRR->Next()) {
         Thread* thread = iterRR->Item();
         int pri = thread->getPriority();
         if (pri < PRI_SCHD_THRESHHOLD) {
             readyRRList->Remove(thread);
-            readyPriorityList->Append(thread);
-        }
-    }
-    for (; iterPri->IsDone(); iterPri->Item()) {
-        Thread* thread = iterPri->Item();
-        int pri = thread->getPriority();
-        if (pri > PRI_SCHD_THRESHHOLD) {
-            readyPriorityList->Remove(thread);
-            readyRRList->Append(thread);
+            ReadyToRun(thread);
         }
     }
 }
@@ -133,7 +131,7 @@ Scheduler::FindNextToRun ()
     Thread * nextThread = NULL;
 
     aging(readyPriorityList);
-
+    //Print();
     if (!readyRRList->IsEmpty()) {
         nextThread = readyRRList->RemoveFront();
     } else if (!readyPriorityList->IsEmpty()) {
