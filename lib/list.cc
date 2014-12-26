@@ -46,6 +46,14 @@ List<T>::List()
     numInList = 0;
 }
 
+template <class T>
+List<T>::List(char* schedulerName)
+{
+    first = last = NULL;
+    numInList = 0;
+    name = schedulerName;
+}
+
 //----------------------------------------------------------------------
 // List<T>::~List
 //  Prepare a list for deallocation.
@@ -86,6 +94,7 @@ List<T>::Append(T item)
     }
     numInList++;
     ASSERT(IsInList(item));
+    cout << "move to " << name << " queue" << endl;
 }
 
 //----------------------------------------------------------------------
@@ -264,7 +273,7 @@ void
 SortedList<T>::Append(T item)
 {
     Insert(item);
-    cout << "move to " << name << "queue" << endl;
+    cout << "move to " << name << " queue" << endl;
 }
 
 //----------------------------------------------------------------------

@@ -17,6 +17,10 @@
 // the data structures and operations needed to keep track of which 
 // thread is running, and which threads are ready but not running.
 
+#define AGING_TICKS         1500
+#define PRIORITY_AGING      10
+#define PRIORITY_THRESHHOLD 60
+
 class Scheduler {
   public:
     Scheduler();		// Initialize list of ready threads 
@@ -25,6 +29,7 @@ class Scheduler {
     void ReadyToRun(Thread* thread);	
     				// Thread can be dispatched.
     Thread* FindNextToRun();	// Dequeue first thread on the ready 
+    Thread* CheckNextToRun();	// Return first thread on the ready 
 				// list, if any, and return thread.
     void Run(Thread* nextThread, bool finishing);
     				// Cause nextThread to start running

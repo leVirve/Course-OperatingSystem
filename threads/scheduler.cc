@@ -31,7 +31,7 @@
 
 Scheduler::Scheduler()
 { 
-    readyRRList = new SortedList<Thread *>("RR");
+    readyRRList = new List<Thread *>("RR");
     readyPriorityList = new SortedList< Thread *>("Priority", Thread::compare_by_priority);
     toBeDestroyed = NULL;
 } 
@@ -63,10 +63,10 @@ Scheduler::ReadyToRun (Thread *thread)
     
     thread->setStatus(READY); 
     thread->setStartReadyTime(kernel->stats->totalTicks);
-    cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
 
     cout << "Tick " << kernel->stats->totalTicks << " Thread " << thread->getID() << " ";
     readyPriorityList->Append(thread);
+    cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
 }
 
 void
@@ -75,11 +75,28 @@ Scheduler::aging (List<Thread *>* list)
     ListIterator<Thread *> *iter = new ListIterator<Thread *>((List<Thread *>*) list);
     for(; !iter->IsDone(); iter->Next()) {
         Thread* thread = iter->Item();
-        int currentclocks = kernel->stats->totalTicks;
-        if(currentclocks - thread->getStartReadyTime() >= 1500) {
-            thread->setPriority(10 + thread->getPriority());
+        Thread* toBeRemove = NULL;
+
+        int clocks_interval = kernel->stats->totalTicks - thread->getStartReadyTime();
+        if(clocks_interval % 1500 == 0 && clocks_interval) {
+            thread->setPriority(PRIORITY_AGING + thread->getPriority());
         }
+        //list->Remove(thread);
+        //list->Append(thread);
+        /*if(toBeRemove != NULL) list->Remove(toBeRemove);
+        toBeRemove = thread;
+        if(thread->getPriority() >= PRIORITY_THRESHHOLD) {
+            toBeRemove = thread;
+            readyRRList->Append(thread); 
+        }*/
     }
+    list->SanityCheck();
+}
+
+Thread*
+Scheduler::CheckNextToRun ()
+{
+    return readyPriorityList->RemoveFront();
 }
 
 //----------------------------------------------------------------------
@@ -94,30 +111,14 @@ Thread *
 Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
+    Thread * nextThread;
 
     if (readyPriorityList->IsEmpty()) {
         return NULL;
     } else {
-#ifdef DIRTY
-        Thread* nextToRun = readyPriorityList->RemoveFront();
-        while(nextToRun->getStatus() == BLOCKED) {
-            nextToRun = readyPriorityList->RemoveFront();    
-        }
-        if(nextToRun->getPriority() < kernel->currentThread->getPriority()
-                && kernel->currentThread->getStatus() != BLOCKED) {
-            readyPriorityList->Append(nextToRun); 
-            nextToRun = kernel->currentThread; 
-        }
-#else
-        Thread * nextThread = readyPriorityList->RemoveFront();
-        while(nextThread->getStatus() == BLOCKED) {
-            nextThread = readyPriorityList->RemoveFront();
-        }
-#endif
-        //cout << "choose " << nextToRun->getName() << endl;
         aging(readyPriorityList);
-        //Print();
-        //cout << endl;
+        nextThread = readyPriorityList->RemoveFront();
+        Print();
         return nextThread;
     }
 }
@@ -218,4 +219,5 @@ Scheduler::Print()
 {
     cout << "Ready list contents:\n";
     readyPriorityList->Apply(ThreadPrint);
+    cout << "." << endl;
 }
