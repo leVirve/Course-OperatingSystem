@@ -264,7 +264,7 @@ void
 SortedList<T>::Append(T item)
 {
     Insert(item);
-    cout << "move to " << name << "queue" << endl;
+    cout << "move to " << name << " queue" << endl;
 }
 
 //----------------------------------------------------------------------

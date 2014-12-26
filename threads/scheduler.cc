@@ -31,7 +31,7 @@
 
 Scheduler::Scheduler()
 { 
-    readyRRList = new SortedList<Thread *>("RR");
+    readyRRList = new List<Thread *>("RR");
     readyPriorityList = new SortedList< Thread *>("Priority", Thread::compare_by_priority);
     toBeDestroyed = NULL;
 } 
@@ -70,14 +70,17 @@ Scheduler::ReadyToRun (Thread *thread)
 }
 
 void
-Scheduler::aging (List<Thread *>* list)
+Scheduler::aging (List<Thread *>* readylist)
 {
+    SortedList<Thread *>* list = readylist;
     ListIterator<Thread *> *iter = new ListIterator<Thread *>((List<Thread *>*) list);
     for(; !iter->IsDone(); iter->Next()) {
         Thread* thread = iter->Item();
-        int currentclocks = kernel->stats->totalTicks;
-        if(currentclocks - thread->getStartReadyTime() >= 1500) {
+        int clocks_interval = kernel->stats->totalTicks - thread->getStartReadyTime();
+        if(clocks_interval && clocks_interval % 1500 == 0) {
             thread->setPriority(10 + thread->getPriority());
+            list->Remove(thread);
+            list->Insert(thread);
         }
     }
 }
@@ -98,26 +101,10 @@ Scheduler::FindNextToRun ()
     if (readyPriorityList->IsEmpty()) {
         return NULL;
     } else {
-#ifdef DIRTY
-        Thread* nextToRun = readyPriorityList->RemoveFront();
-        while(nextToRun->getStatus() == BLOCKED) {
-            nextToRun = readyPriorityList->RemoveFront();    
-        }
-        if(nextToRun->getPriority() < kernel->currentThread->getPriority()
-                && kernel->currentThread->getStatus() != BLOCKED) {
-            readyPriorityList->Append(nextToRun); 
-            nextToRun = kernel->currentThread; 
-        }
-#else
-        Thread * nextThread = readyPriorityList->RemoveFront();
-        while(nextThread->getStatus() == BLOCKED) {
-            nextThread = readyPriorityList->RemoveFront();
-        }
-#endif
-        //cout << "choose " << nextToRun->getName() << endl;
         aging(readyPriorityList);
-        //Print();
-        //cout << endl;
+        // Print();
+        Thread * nextThread = readyPriorityList->RemoveFront();
+
         return nextThread;
     }
 }
@@ -218,4 +205,5 @@ Scheduler::Print()
 {
     cout << "Ready list contents:\n";
     readyPriorityList->Apply(ThreadPrint);
+    cout << endl;
 }

@@ -108,7 +108,7 @@ class Thread {
         int  getStartReadyTime() { return (startReadyTime); }
         bool setPriority(int priority);
         void setStartReadyTime(int timeclocks) { startReadyTime = timeclocks; }
-        void Print() { cout << name; }
+        void Print() { cout << name << "(" << pri << ")"; }
         void SelfTest();		// test whether thread impl is working
 
     private:
