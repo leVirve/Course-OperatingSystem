@@ -44,6 +44,7 @@ template <class T>
 class List {
   public:
     List();			// initialize the list
+    List(char* schedulerName);
     virtual ~List();		// de-allocate the list
 
     virtual void Prepend(T item);// Put item at the beginning of the list
@@ -71,6 +72,8 @@ class List {
 				// verify module is working
 
   protected:
+    char *name;
+
     ListElement<T> *first;  	// Head of the list, NULL if list is empty
     ListElement<T> *last;	// Last element of list
     int numInList;		// number of elements in list

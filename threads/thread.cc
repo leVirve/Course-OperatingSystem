@@ -50,6 +50,23 @@ Thread::Thread(char* threadName, int threadID)
     space = NULL;
 }
 
+Thread::Thread(char* threadName, int threadID, int priority)
+{
+    ID = threadID;
+    name = threadName;
+    pri = priority;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+    cout << "Thread " << ID << "\tProcessNew\t" << kernel->stats->totalTicks << endl;
+    for (int i = 0; i < MachineStateSize; i++) {
+        machineState[i] = NULL;		// not strictly necessary, since
+                                        // new thread ignores contents 
+                                        // of machine registers
+    }
+    space = NULL;
+}
+
 //----------------------------------------------------------------------
 // Thread::~Thread
 // 	De-allocate a thread.
@@ -74,7 +91,7 @@ bool Thread::setPriority(int priority)
 {
     if(priority >= 150 || priority < 0) return false;
     pri = priority;
-    cout<< "Tick " << kernel->stats->totalTicks << " Thread" << ID << " changes its priority to " << pri << endl;
+    cout<< "Tick " << kernel->stats->totalTicks << " Thread " << ID << " changes its priority to " << pri << endl;
     return true;
 }
 
@@ -217,20 +234,28 @@ Thread::Yield ()
     ASSERT(this == kernel->currentThread);
 
     DEBUG(dbgThread, "Yielding thread: " << name);
-#ifdef WTF_SPEC
+
+#ifndef WTF_OUTPUT
+    kernel->scheduler->ReadyToRun(this);
     nextThread = kernel->scheduler->FindNextToRun();
-    if (nextThread != NULL) {
-        kernel->scheduler->ReadyToRun(this);
+    if (nextThread != NULL && nextThread != kernel->currentThread) {
         kernel->scheduler->Run(nextThread, FALSE);
     }
 #else
-    kernel->scheduler->ReadyToRun(this);
     nextThread = kernel->scheduler->FindNextToRun();
-    if(nextThread != NULL) {
-        kernel->scheduler->Run(nextThread, FALSE);
+    if (nextThread != NULL) {
+        if (nextThread->getPriority() > kernel->currentThread->getPriority()) {
+            nextThread = kernel->scheduler->CheckNextToRun();
+            kernel->scheduler->ReadyToRun(this);
+            kernel->scheduler->Run(nextThread, FALSE);
+            cout << "GGGG" << endl;
+        } else {
+            cout << "FFFF" << nextThread->getName()  << endl;
+            kernel->scheduler->ReadyToRun(this);
+            nextThread = kernel->scheduler->CheckNextToRun();
+        }    
     }
 #endif
-
     (void) kernel->interrupt->SetLevel(oldLevel);
 }
 
@@ -267,16 +292,10 @@ Thread::Sleep (bool finishing)
 
     status = BLOCKED;
 
-    // remove finished thread from ready queue
-    if(finishing) {
-        //kernel->scheduler->->Remove(this);
-    }
-
     //cout << "debug Thread::Sleep " << name << "wait for Idle\n";
     while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL) {
         kernel->interrupt->Idle();	// no one to run, wait for an interrupt
     }
-    cout << nextThread->getName() << endl; 
     // returns when it's time for us to run
     kernel->scheduler->Run(nextThread, finishing); 
 }

@@ -63,10 +63,10 @@ Scheduler::ReadyToRun (Thread *thread)
     
     thread->setStatus(READY); 
     thread->setStartReadyTime(kernel->stats->totalTicks);
-    cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
 
     cout << "Tick " << kernel->stats->totalTicks << " Thread " << thread->getID() << " ";
     readyPriorityList->Append(thread);
+    cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
 }
 
 void
@@ -78,11 +78,17 @@ Scheduler::aging (List<Thread *>* readylist)
         Thread* thread = iter->Item();
         int clocks_interval = kernel->stats->totalTicks - thread->getStartReadyTime();
         if(clocks_interval && clocks_interval % 1500 == 0) {
-            thread->setPriority(10 + thread->getPriority());
+            thread->setPriority(PRIORITY_AGING + thread->getPriority());
             list->Remove(thread);
             list->Insert(thread);
         }
     }
+}
+
+Thread*
+Scheduler::CheckNextToRun ()
+{
+    return readyPriorityList->RemoveFront();
 }
 
 //----------------------------------------------------------------------
@@ -97,14 +103,14 @@ Thread *
 Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
+    Thread * nextThread;
 
     if (readyPriorityList->IsEmpty()) {
         return NULL;
     } else {
         aging(readyPriorityList);
+        nextThread = readyPriorityList->RemoveFront();
         // Print();
-        Thread * nextThread = readyPriorityList->RemoveFront();
-
         return nextThread;
     }
 }
@@ -207,3 +213,4 @@ Scheduler::Print()
     readyPriorityList->Apply(ThreadPrint);
     cout << endl;
 }
+

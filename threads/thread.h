@@ -77,12 +77,13 @@ class Thread {
     private:
         // NOTE: DO NOT CHANGE the order of these first two members.
         // THEY MUST be in this position for SWITCH to work.
-        int *stackTop;			 // the current stack pointer
-        void *machineState[MachineStateSize];  // all registers except for stackTop
+        int *stackTop;			        // the current stack pointer
+        void *machineState[MachineStateSize];   // all registers except for stackTop
 
     public:
-        Thread(char* debugName, int threadID);		// initialize a Thread 
-        ~Thread(); 				// deallocate a Thread
+        Thread(char* debugName, int threadID);                  // initialize a Thread 
+        Thread(char* debugName, int threadID, int priority);    // initialize a Thread 
+        ~Thread(); 				                // deallocate a Thread
         // NOTE -- thread being deleted
         // must not be running when delete 
         // is called
