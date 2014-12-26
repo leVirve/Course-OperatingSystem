@@ -19,7 +19,8 @@
 
 #define AGING_TICKS         1500
 #define PRIORITY_AGING      10
-#define PRIORITY_THRESHHOLD 60
+#define PRI_SCHD_THRESHHOLD 60
+#define SJF_SCHD_THRESHHOLD 100
 
 class Scheduler {
   public:
@@ -46,6 +47,8 @@ class Scheduler {
     Thread *toBeDestroyed;	// finishing thread to be destroyed
     				// by the next thread that runs
     void aging(List<Thread *>* list);
+
+    void processMoving();
 };
 
 #endif // SCHEDULER_H

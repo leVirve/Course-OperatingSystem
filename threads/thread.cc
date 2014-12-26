@@ -248,9 +248,7 @@ Thread::Yield ()
             nextThread = kernel->scheduler->CheckNextToRun();
             kernel->scheduler->ReadyToRun(this);
             kernel->scheduler->Run(nextThread, FALSE);
-            cout << "GGGG" << endl;
         } else {
-            cout << "FFFF" << nextThread->getName()  << endl;
             kernel->scheduler->ReadyToRun(this);
             nextThread = kernel->scheduler->CheckNextToRun();
         }    

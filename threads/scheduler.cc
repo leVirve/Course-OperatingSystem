@@ -65,7 +65,15 @@ Scheduler::ReadyToRun (Thread *thread)
     thread->setStartReadyTime(kernel->stats->totalTicks);
 
     cout << "Tick " << kernel->stats->totalTicks << " Thread " << thread->getID() << " ";
-    readyPriorityList->Append(thread);
+
+    int pri = thread->getPriority();
+    if (pri >= SJF_SCHD_THRESHHOLD) {
+        
+    } else if (pri >= PRI_SCHD_THRESHHOLD) {
+        readyRRList->Append(thread);
+    } else {
+        readyPriorityList->Append(thread);
+    }
     cout << "Thread " <<  thread->getID() << "\tProcessReady\t" << kernel->stats->totalTicks << endl;
 }
 
@@ -74,21 +82,40 @@ Scheduler::aging (List<Thread *>* readylist)
 {
     SortedList<Thread *>* list = readylist;
     ListIterator<Thread *> *iter = new ListIterator<Thread *>((List<Thread *>*) list);
-    for(; !iter->IsDone(); iter->Next()) {
+    for (; !iter->IsDone(); iter->Next()) {
         Thread* thread = iter->Item();
         int clocks_interval = kernel->stats->totalTicks - thread->getStartReadyTime();
-        if(clocks_interval && clocks_interval % 1500 == 0) {
+        if (clocks_interval && clocks_interval % AGING_TICKS == 0) {
             thread->setPriority(PRIORITY_AGING + thread->getPriority());
             list->Remove(thread);
             list->Insert(thread);
         }
     }
+    processMoving();
 }
 
-Thread*
-Scheduler::CheckNextToRun ()
+void
+Scheduler::processMoving()
 {
-    return readyPriorityList->RemoveFront();
+    ListIterator<Thread *>* iterRR  = new ListIterator<Thread *>((List<Thread *>*) readyRRList);
+    ListIterator<Thread *>* iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
+
+    for (; !iterRR->IsDone(); iterRR->Item()) {
+        Thread* thread = iterRR->Item();
+        int pri = thread->getPriority();
+        if (pri < PRI_SCHD_THRESHHOLD) {
+            readyRRList->Remove(thread);
+            readyPriorityList->Append(thread);
+        }
+    }
+    for (; iterPri->IsDone(); iterPri->Item()) {
+        Thread* thread = iterPri->Item();
+        int pri = thread->getPriority();
+        if (pri > PRI_SCHD_THRESHHOLD) {
+            readyPriorityList->Remove(thread);
+            readyRRList->Append(thread);
+        }
+    }
 }
 
 //----------------------------------------------------------------------
@@ -103,16 +130,17 @@ Thread *
 Scheduler::FindNextToRun ()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
-    Thread * nextThread;
+    Thread * nextThread = NULL;
 
-    if (readyPriorityList->IsEmpty()) {
-        return NULL;
-    } else {
-        aging(readyPriorityList);
+    aging(readyPriorityList);
+
+    if (!readyRRList->IsEmpty()) {
+        nextThread = readyRRList->RemoveFront();
+    } else if (!readyPriorityList->IsEmpty()) {
         nextThread = readyPriorityList->RemoveFront();
-        // Print();
-        return nextThread;
     }
+    // cout << nextThread->getName() << endl;
+    return nextThread;
 }
 
 //----------------------------------------------------------------------
