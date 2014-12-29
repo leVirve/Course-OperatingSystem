@@ -44,6 +44,9 @@ class Scheduler {
     List<Thread *> *readyRRList;  // queue of threads that are ready to run,
 				// but not running
     List<Thread *> *readyPriorityList;
+
+    List<Thread *> *readySJFList;
+
     Thread *toBeDestroyed;	// finishing thread to be destroyed
     				// by the next thread that runs
     void aging(List<Thread *>* list);

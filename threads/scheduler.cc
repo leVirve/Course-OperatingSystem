@@ -32,7 +32,8 @@
 Scheduler::Scheduler()
 { 
     readyRRList = new List<Thread *>("RR");
-    readyPriorityList = new SortedList< Thread *>("Priority", Thread::compare_by_priority);
+    readyPriorityList = new SortedList<Thread *>("Priority", Thread::compare_by_priority);
+    readySJFList = new SortedList<Thread *>("SJF", Thread::compare_by_burst);
     toBeDestroyed = NULL;
 } 
 
@@ -44,8 +45,9 @@ Scheduler::Scheduler()
 Scheduler::~Scheduler()
 { 
     delete readyRRList; 
-    delete readyPriorityList; 
-} 
+    delete readyPriorityList;
+    delete readySJFList;
+}
 
 //----------------------------------------------------------------------
 // Scheduler::ReadyToRun
@@ -91,25 +93,26 @@ Scheduler::aging (List<Thread *>* readylist)
             list->Remove(thread);
             list->Insert(thread);
         }
-        int pri = thread->getPriority();
-        if (pri >= PRI_SCHD_THRESHHOLD) {
-            readyPriorityList->Remove(thread);
-            ReadyToRun(thread);
-        }
     }
     processMoving();
 }
 
 void
-Scheduler::processMoving()
+Scheduler::processMoving ()
 {
     ListIterator<Thread *>* iterRR  = new ListIterator<Thread *>((List<Thread *>*) readyRRList);
-    // ListIterator<Thread *>* iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
-
+    ListIterator<Thread *> *iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
+    for (; !iterPri->IsDone(); iterPri->Next()) {
+        Thread* thread = iterPri->Item();
+        if (thread->getPriority() >= PRI_SCHD_THRESHHOLD) {
+            readyPriorityList->Remove(thread);
+            ReadyToRun(thread);
+        }
+    }
+ 
     for (; !iterRR->IsDone(); iterRR->Next()) {
         Thread* thread = iterRR->Item();
-        int pri = thread->getPriority();
-        if (pri < PRI_SCHD_THRESHHOLD) {
+        if (thread->getPriority() < PRI_SCHD_THRESHHOLD) {
             readyRRList->Remove(thread);
             ReadyToRun(thread);
         }
@@ -179,6 +182,11 @@ Scheduler::Run (Thread *nextThread, bool finishing)
 
     oldThread->CheckOverflow();		    // check if the old thread
     // had an undetected stack overflow
+
+    int predicted = nextThread->getBurstTime() * 0.5 + (kernel->stats->totalTicks - nextThread->getStartBurst()) * 0.5;
+    cout << nextThread->getBurstTime() << " , "  << nextThread->getStartBurst() << " = " << predicted << endl;
+    nextThread->setStartBurstTime(kernel->stats->totalTicks);
+    nextThread->setBurstTime(predicted);
 
     kernel->currentThread = nextThread;  // switch to the next thread
     nextThread->setStatus(RUNNING);      // nextThread is now running

@@ -74,6 +74,14 @@ ExceptionHandler(ExceptionType which)
                 case SC_Nice:
                     val=kernel->machine->ReadRegister(4);
                     SysNice(val);
+                    
+                    int predicted;
+                    predicted = kernel->currentThread->getBurstTime() * 0.5 + (kernel->stats->totalTicks - kernel->currentThread->getStartBurst()) * 0.5;
+                    
+                    cout << "(burst)" << kernel->currentThread->getBurstTime() << " , (start)" << kernel->currentThread->getStartBurst() << " = (predict)"  << predicted << endl;
+                    kernel->currentThread->setStartBurstTime(kernel->stats->totalTicks);
+                    kernel->currentThread->setBurstTime(predicted);
+
                     kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
                     kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
                     return;

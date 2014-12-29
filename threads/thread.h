@@ -107,8 +107,12 @@ class Thread {
         int  getID() { return (ID); }
         int  getPriority() { return (pri); }
         int  getStartReadyTime() { return (startReadyTime); }
+        int  getBurstTime() { return (burstTime); }
+        int  getStartBurst() { return (startBurstTime); }
         bool setPriority(int priority);
         void setStartReadyTime(int timeclocks) { startReadyTime = timeclocks; }
+        void setBurstTime(int burst);
+        void setStartBurstTime(int burstStart) { startBurstTime = burstStart; }
         void Print() { cout << name << "(" << pri << ")"; }
         void SelfTest();		// test whether thread impl is working
 
@@ -123,6 +127,8 @@ class Thread {
         int   ID;
         int   pri;
         int   startReadyTime;
+        int   startBurstTime;
+        int   burstTime;
         void StackAllocate(VoidFunctionPtr func, void *arg);
         // Allocate a stack for thread.
         // Used internally by Fork()
@@ -134,8 +140,13 @@ class Thread {
         int userRegisters[NumTotalRegs];	// user-level CPU register state
 
     public:
+
         static int compare_by_priority(Thread* t1, Thread* t2) { return t2->getPriority() - t1->getPriority(); }
+
+        static int compare_by_burst(Thread* t1, Thread* t2) { return t1->getBurstTime() - t2->getBurstTime(); }
+
         void SaveUserState();		// save user-level register state
+
         void RestoreUserState();		// restore user-level register state
 
         AddrSpace *space;			// User code this thread is running.
