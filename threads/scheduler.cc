@@ -93,7 +93,7 @@ Scheduler::aging (List<Thread *>* readylist)
             list->Remove(thread);
             list->Insert(thread);
         }
-
+    }
     processMoving();
 }
 
@@ -102,21 +102,32 @@ Scheduler::processMoving ()
 {
     ListIterator<Thread *>* iterRR  = new ListIterator<Thread *>((List<Thread *>*) readyRRList);
     ListIterator<Thread *> *iterPri = new ListIterator<Thread *>((List<Thread *>*) readyPriorityList);
+    ListIterator<Thread *> *iterSJF = new ListIterator<Thread *>((List<Thread *>*) readySJFList);
+    
+    for (; !iterSJF->IsDone(); iterSJF->Next()) {
+        Thread* thread = iterSJF->Item();
+        if (thread->getPriority() < SJF_SCHD_THRESHHOLD) {
+            readySJFList->Remove(thread);
+            ReadyToRun(thread);
+        }
+    }
+
+    for (; !iterRR->IsDone(); iterRR->Next()) {
+        Thread* thread = iterRR->Item();
+        if (thread->getPriority() < PRI_SCHD_THRESHHOLD
+                || thread->getPriority() >= SJF_SCHD_THRESHHOLD) {
+            readyRRList->Remove(thread);
+            ReadyToRun(thread);
+        }
+    }
+
     for (; !iterPri->IsDone(); iterPri->Next()) {
         Thread* thread = iterPri->Item();
         if (thread->getPriority() >= PRI_SCHD_THRESHHOLD) {
             readyPriorityList->Remove(thread);
             ReadyToRun(thread);
         }
-    }
- 
-    for (; !iterRR->IsDone(); iterRR->Next()) {
-        Thread* thread = iterRR->Item();
-        if (thread->getPriority() < PRI_SCHD_THRESHHOLD) {
-            readyRRList->Remove(thread);
-            ReadyToRun(thread);
-        }
-    }
+    } 
 }
 
 //----------------------------------------------------------------------
