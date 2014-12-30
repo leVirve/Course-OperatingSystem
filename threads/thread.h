@@ -104,11 +104,15 @@ class Thread {
         ThreadStatus getStatus() { return (status); }
         char* getName() { return (name); }
 
-        int  getID() { return (ID); }
-        int  getPriority() { return (pri); }
-        int  getStartReadyTime() { return (startReadyTime); }
+        int     getID() { return (ID); }
+        int     getPriority() { return (pri); }
+        int     getStartReadyTime() { return (startReadyTime); }
+        int     getStartBurst() { return (startBurstTime); }
+        double  getBurstTime() { return (burstTime); }
         bool setPriority(int priority);
         void setStartReadyTime(int timeclocks) { startReadyTime = timeclocks; }
+        void setBurstTime(double burst);
+        void setStartBurstTime(int burstStart) { startBurstTime = burstStart; }
         void Print() { cout << name << "(" << pri << ")"; }
         void SelfTest();		// test whether thread impl is working
 
@@ -119,10 +123,12 @@ class Thread {
         // NULL if this is the main thread
         // (If NULL, don't deallocate stack)
         ThreadStatus status;	// ready, running or blocked
-        char* name;
-        int   ID;
-        int   pri;
-        int   startReadyTime;
+        char*  name;
+        int    ID;
+        int    pri;
+        int    startReadyTime;
+        int    startBurstTime;
+        double burstTime;
         void StackAllocate(VoidFunctionPtr func, void *arg);
         // Allocate a stack for thread.
         // Used internally by Fork()
@@ -134,8 +140,16 @@ class Thread {
         int userRegisters[NumTotalRegs];	// user-level CPU register state
 
     public:
+
         static int compare_by_priority(Thread* t1, Thread* t2) { return t2->getPriority() - t1->getPriority(); }
+
+        static int compare_by_burst(Thread* t1, Thread* t2) { 
+            if (t1->getBurstTime() == t2->getBurstTime()) return 0;
+            return t1->getBurstTime() > t2->getBurstTime() ? 1 : -1;
+        }
+
         void SaveUserState();		// save user-level register state
+
         void RestoreUserState();		// restore user-level register state
 
         AddrSpace *space;			// User code this thread is running.

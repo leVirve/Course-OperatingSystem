@@ -38,6 +38,7 @@ Thread::Thread(char* threadName, int threadID)
     ID = threadID;
     name = threadName;
     pri = 75;
+    startBurstTime = kernel->stats->totalTicks;
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
@@ -55,6 +56,8 @@ Thread::Thread(char* threadName, int threadID, int priority)
     ID = threadID;
     name = threadName;
     pri = priority;
+    //startBurstTime = kernel->stats->totalTicks;
+    startBurstTime = 0;
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
@@ -87,12 +90,20 @@ Thread::~Thread()
         DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
 
-bool Thread::setPriority(int priority)
+bool
+Thread::setPriority(int priority)
 {
     if(priority >= 150 || priority < 0) return false;
     pri = priority;
     cout<< "Tick " << kernel->stats->totalTicks << " Thread " << ID << " changes its priority to " << pri << endl;
     return true;
+}
+
+void
+Thread::setBurstTime(double burst)
+{
+    burstTime = burst;
+    cout << "Tick " << kernel->stats->totalTicks << " Thread " << kernel->currentThread->getID() << " change its burst time to " << burst << endl;  
 }
 
 //----------------------------------------------------------------------
@@ -418,13 +429,12 @@ Thread::SaveUserState()
 //	while executing kernel code.  This routine restores the former.
 //----------------------------------------------------------------------
 
-    void
+void
 Thread::RestoreUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
         kernel->machine->WriteRegister(i, userRegisters[i]);
 }
-
 
 //----------------------------------------------------------------------
 // SimpleThread
@@ -435,7 +445,7 @@ Thread::RestoreUserState()
 //	purposes.
 //----------------------------------------------------------------------
 
-    static void
+static void
 SimpleThread(int which)
 {
     int num;
@@ -452,7 +462,7 @@ SimpleThread(int which)
 //	to call SimpleThread, and then calling SimpleThread ourselves.
 //----------------------------------------------------------------------
 
-    void
+void
 Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
