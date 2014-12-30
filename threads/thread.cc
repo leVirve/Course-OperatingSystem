@@ -235,25 +235,11 @@ Thread::Yield ()
 
     DEBUG(dbgThread, "Yielding thread: " << name);
 
-#ifndef WTF_OUTPUT
     kernel->scheduler->ReadyToRun(this);
     nextThread = kernel->scheduler->FindNextToRun();
     if (nextThread != NULL && nextThread != kernel->currentThread) {
         kernel->scheduler->Run(nextThread, FALSE);
     }
-#else
-    nextThread = kernel->scheduler->FindNextToRun();
-    if (nextThread != NULL) {
-        if (nextThread->getPriority() > kernel->currentThread->getPriority()) {
-            nextThread = kernel->scheduler->CheckNextToRun();
-            kernel->scheduler->ReadyToRun(this);
-            kernel->scheduler->Run(nextThread, FALSE);
-        } else {
-            kernel->scheduler->ReadyToRun(this);
-            nextThread = kernel->scheduler->CheckNextToRun();
-        }    
-    }
-#endif
     (void) kernel->interrupt->SetLevel(oldLevel);
 }
 

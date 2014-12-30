@@ -68,7 +68,7 @@ Scheduler::ReadyToRun (Thread *thread)
 
     int pri = thread->getPriority();
     if (pri >= SJF_SCHD_THRESHHOLD) {
-        
+                
     } else if (pri >= PRI_SCHD_THRESHHOLD) {
         readyRRList->Append(thread);
     } else {
