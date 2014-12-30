@@ -100,7 +100,7 @@ Thread::setPriority(int priority)
 }
 
 void
-Thread::setBurstTime(int burst)
+Thread::setBurstTime(double burst)
 {
     burstTime = burst;
     cout << "Tick " << kernel->stats->totalTicks << " Thread " << kernel->currentThread->getID() << " change its burst time to " << burst << endl;  

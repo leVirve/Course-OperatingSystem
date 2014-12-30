@@ -75,10 +75,8 @@ ExceptionHandler(ExceptionType which)
                     val=kernel->machine->ReadRegister(4);
                     SysNice(val);
                     
-                    int predicted;
+                    double predicted;
                     predicted = kernel->currentThread->getBurstTime() * 0.5 + (kernel->stats->totalTicks - kernel->currentThread->getStartBurst()) * 0.5;
-                    
-                    cout << "(burst)" << kernel->currentThread->getBurstTime() << " , (start)" << kernel->currentThread->getStartBurst() << " = (predict)"  << predicted << endl;
                     kernel->currentThread->setStartBurstTime(kernel->stats->totalTicks);
                     kernel->currentThread->setBurstTime(predicted);
 

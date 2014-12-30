@@ -70,7 +70,7 @@ Scheduler::ReadyToRun (Thread *thread)
 
     int pri = thread->getPriority();
     if (pri >= SJF_SCHD_THRESHHOLD) {
-        
+        readySJFList->Append(thread);
     } else if (pri >= PRI_SCHD_THRESHHOLD) {
         readyRRList->Append(thread);
     } else {
@@ -134,13 +134,14 @@ Scheduler::FindNextToRun ()
     Thread * nextThread = NULL;
 
     aging(readyPriorityList);
-    //Print();
-    if (!readyRRList->IsEmpty()) {
+
+    if (!readySJFList->IsEmpty()) {
+        nextThread = readySJFList->RemoveFront();
+    } else if (!readyRRList->IsEmpty()) {
         nextThread = readyRRList->RemoveFront();
     } else if (!readyPriorityList->IsEmpty()) {
         nextThread = readyPriorityList->RemoveFront();
     }
-    // cout << nextThread->getName() << endl;
     return nextThread;
 }
 
@@ -181,12 +182,13 @@ Scheduler::Run (Thread *nextThread, bool finishing)
     }
 
     oldThread->CheckOverflow();		    // check if the old thread
-    // had an undetected stack overflow
+                                            // had an undetected stack overflow
 
-    int predicted = nextThread->getBurstTime() * 0.5 + (kernel->stats->totalTicks - nextThread->getStartBurst()) * 0.5;
-    cout << nextThread->getBurstTime() << " , "  << nextThread->getStartBurst() << " = " << predicted << endl;
+    // old thread burst time
+    double predicted = 0.5 * (kernel->stats->totalTicks - oldThread->getStartBurst() + oldThread->getBurstTime());
+    oldThread->setBurstTime(predicted);
+    // set up the individual start time of burst
     nextThread->setStartBurstTime(kernel->stats->totalTicks);
-    nextThread->setBurstTime(predicted);
 
     kernel->currentThread = nextThread;  // switch to the next thread
     nextThread->setStatus(RUNNING);      // nextThread is now running
