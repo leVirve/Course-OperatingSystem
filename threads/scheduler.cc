@@ -82,7 +82,7 @@ Scheduler::ReadyToRun (Thread *thread)
 void
 Scheduler::aging (List<Thread *>* readylist)
 {
-    SortedList<Thread *>* list = readylist;
+    SortedList<Thread *>* list = dynamic_cast<SortedList<Thread *>*>(readylist);
     ListIterator<Thread *> *iter = new ListIterator<Thread *>((List<Thread *>*) list);
     for (; !iter->IsDone(); iter->Next()) {
         Thread* thread = iter->Item();
