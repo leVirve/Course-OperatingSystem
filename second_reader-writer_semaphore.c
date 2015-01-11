@@ -16,6 +16,12 @@
 #define LONG_WORK   MICRO_SEC * 3.3
 #define SHORT_WORK  MICRO_SEC * 1.3
 
+#define time_diff(x) x.tv_sec - start.tv_sec + (double)(x.tv_usec - start.tv_usec) / MICRO_SEC
+#define dump_status(tid)  struct timeval timestamp; \
+                    gettimeofday(&timestamp, NULL); \
+                    printf("Writer thread#%ld @(time: %.1f)\n", tid, time_diff(timestamp)); \
+                    fflush(stdout);
+
 int readercount, writercount;
 semaphore rdcnt, wrcnt, mutex;
 semaphore r, w;
@@ -46,11 +52,7 @@ void *writer(void *arg)
         signal(&r);
     signal(&wrcnt);
 
-    struct timeval timestamp;
-    gettimeofday(&timestamp, NULL);
-    double diff = timestamp.tv_sec - start.tv_sec + (double)(timestamp.tv_usec - start.tv_usec) / MICRO_SEC;
-    printf("Writer thread#%ld @(time: %.1f)\n", rw_data->tid, diff);
-    fflush(stdout);
+    dump_status(rw_data->tid);
     pthread_exit(NULL);
 }
 
@@ -75,11 +77,7 @@ void *reader(void *arg)
         signal(&w);
     signal(&rdcnt);
 
-    struct timeval timestamp;
-    gettimeofday(&timestamp, NULL);
-    double diff = timestamp.tv_sec - start.tv_sec + (double)(timestamp.tv_usec - start.tv_usec) / MICRO_SEC;
-    printf("Reader thread#%ld @(time: %.1f)\n", rw_data->tid, diff);
-    fflush(stdout);
+    dump_status(rw_data->tid);
     pthread_exit(NULL);
 }
 
@@ -103,13 +101,12 @@ int main (int argc, char *argv[])
 
     for(long t = 1; t < argc; t++) {
         char rw_type = argv[t][0];
+        readers_writers[t] = (struct reader_writer) { .tid = t, .sleep_time = isupper(rw_type) ? LONG_WORK : SHORT_WORK };
         switch(rw_type) {
         case 'w': case 'W':
-            readers_writers[t] = (struct reader_writer) { .tid = t, .sleep_time = isupper(rw_type) ? LONG_WORK : SHORT_WORK };
             pthread_create(&threads[t], NULL, writer, (void *) &readers_writers[t]);
             break;
         case 'r': case 'R':
-            readers_writers[t] = (struct reader_writer) { .tid = t, .sleep_time = isupper(rw_type) ? LONG_WORK : SHORT_WORK };
             pthread_create(&threads[t], NULL, reader, (void *) &readers_writers[t]);
             break;
         }
