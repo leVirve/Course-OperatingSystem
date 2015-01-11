@@ -1,0 +1,13 @@
+
+*.o
+*.coff
+*.swp
+
+nachos
+
+/test
+
+DISK_0
+
+README
+
